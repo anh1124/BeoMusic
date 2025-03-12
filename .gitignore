@@ -28,3 +28,6 @@ local.properties
 .idea/navEditor.xml
 .idea/assetWizardSettings.xml
 
+# Giữ lại các tệp cấu hình chạy
+!.idea/runConfigurations/
+!.idea/runConfigurations.xml
