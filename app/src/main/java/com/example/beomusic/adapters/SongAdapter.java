@@ -92,7 +92,6 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewHolder
             // Sử dụng Glide để load ảnh
             Glide.with(context)
                     .load(song.getThumbnailUrl())
-                    .placeholder(R.drawable.ic_song_placeholder)
                     .into(imgSong);
         }
     }
