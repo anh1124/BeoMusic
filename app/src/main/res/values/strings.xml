@@ -77,4 +77,17 @@
     <string name="error_fields_required">Vui lòng điền đầy đủ thông tin</string>
     <string name="error_incorrect_password">Mật khẩu không chính xác</string>
     <string name="error_password_required">Vui lòng nhập mật khẩu</string>
+
+    <string name="back">Back</string>
+    <string name="menu">Menu</string>
+    <string name="shuffle">Shuffle</string>
+    <string name="previous">Previous</string>
+    <string name="play_pause">Play/Pause</string>
+    <string name="next">Next</string>
+    <string name="repeat">Repeat</string>
+    <string name="current_time">1:07</string>
+    <string name="total_time">3:36</string>
+    <string name="song_title">Not like us</string>
+    <string name="song_artist">Kendric Lamar</string>
+
 </resources>

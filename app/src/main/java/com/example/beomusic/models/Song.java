@@ -8,7 +8,6 @@ public class Song {
     private String artist;
     private int duration; // Giây
     private String sourceType; // "YouTube" hoặc "Local"
-    private String youTubeId;
     private String filePath;
     private String thumbnailUrl; // URL hình ảnh thumbnail
     private String genre; // Thể loại nhạc
@@ -18,28 +17,26 @@ public class Song {
     public Song() { } // Constructor rỗng cần thiết cho Firebase
 
     // Constructor cơ bản
-    public Song(String songId, String title, String artist, int duration, String sourceType, String youTubeId, String filePath) {
+    public Song(String songId, String title, String artist, int duration, String sourceType, String filePath) {
         this.songId = songId;
         this.title = title;
         this.artist = artist;
         this.duration = duration;
         this.sourceType = sourceType;
-        this.youTubeId = youTubeId;
         this.filePath = filePath;
         this.addedDate = new Date();
         this.playCount = 0;
     }
 
     // Constructor đầy đủ
-    public Song(String songId, String title, String artist, int duration, String sourceType, 
-                String youTubeId, String filePath, String thumbnailUrl, String genre, 
+    public Song(String songId, String title, String artist, int duration, String sourceType,
+                String filePath, String thumbnailUrl, String genre,
                 Date addedDate, long playCount) {
         this.songId = songId;
         this.title = title;
         this.artist = artist;
         this.duration = duration;
         this.sourceType = sourceType;
-        this.youTubeId = youTubeId;
         this.filePath = filePath;
         this.thumbnailUrl = thumbnailUrl;
         this.genre = genre;
@@ -53,7 +50,6 @@ public class Song {
     public String getArtist() { return artist; }
     public int getDuration() { return duration; }
     public String getSourceType() { return sourceType; }
-    public String getYouTubeId() { return youTubeId; }
     public String getFilePath() { return filePath; }
     public String getThumbnailUrl() { return thumbnailUrl; }
     public String getGenre() { return genre; }
@@ -66,7 +62,6 @@ public class Song {
     public void setArtist(String artist) { this.artist = artist; }
     public void setDuration(int duration) { this.duration = duration; }
     public void setSourceType(String sourceType) { this.sourceType = sourceType; }
-    public void setYouTubeId(String youTubeId) { this.youTubeId = youTubeId; }
     public void setFilePath(String filePath) { this.filePath = filePath; }
     public void setThumbnailUrl(String thumbnailUrl) { this.thumbnailUrl = thumbnailUrl; }
     public void setGenre(String genre) { this.genre = genre; }
@@ -80,7 +75,7 @@ public class Song {
 
     // Phương thức kiểm tra xem bài hát có phải từ YouTube không
     public boolean isFromYouTube() {
-        return "YouTube".equalsIgnoreCase(sourceType) && youTubeId != null && !youTubeId.isEmpty();
+        return "YouTube".equalsIgnoreCase(sourceType);
     }
 
     // Phương thức kiểm tra xem bài hát có phải là file local không

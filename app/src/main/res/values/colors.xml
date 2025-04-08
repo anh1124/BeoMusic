@@ -3,5 +3,8 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="purple_500">#9C27B0</color> <!-- Đây là màu tím mặc định, bạn có thể thay đổi -->
-
+    <color name="dark_purple">#1F1936</color>
+    <color name="purple">#3C2B67</color>
+    <color name="blue">#2E3FD4</color>
+    <color name="light_gray">#B3B3B3</color>
 </resources>
