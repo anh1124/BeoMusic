@@ -31,3 +31,5 @@ local.properties
 # Giữ lại các tệp cấu hình chạy
 !.idea/runConfigurations/
 !.idea/runConfigurations.xml
+.idea/misc.xml
+.idea
