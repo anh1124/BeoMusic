@@ -9,6 +9,7 @@ import com.example.beomusic.R;
 import com.example.beomusic.views.HomeActivity;
 import com.example.beomusic.views.album.AlbumListActivity;
 import com.example.beomusic.views.album.SongDetailActivity;
+import com.example.beomusic.views.auth.AccountActivity;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 public abstract class BaseActivity extends AppCompatActivity {
@@ -54,7 +55,7 @@ public abstract class BaseActivity extends AppCompatActivity {
             } else if (itemId == R.id.nav_album) {
                 intent = new Intent(BaseActivity.this, AlbumListActivity.class);
             } else if (itemId == R.id.nav_profile) {
-                intent = new Intent(BaseActivity.this, SongDetailActivity.class);
+                intent = new Intent(BaseActivity.this, AccountActivity.class);
             }
 
             if (intent != null) {

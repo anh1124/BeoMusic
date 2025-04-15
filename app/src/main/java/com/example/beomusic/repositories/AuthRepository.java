@@ -11,7 +11,9 @@ import com.example.beomusic.models.User;
 import com.example.beomusic.ultis.PasswordUtils;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.AuthResult;
+import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
@@ -28,6 +30,7 @@ public class AuthRepository {
     private static final String PREF_NAME = "BeoMusicPrefs";
     private static final String KEY_USER_ID = "userId";
     private static final String KEY_AUTH_TOKEN = "authToken";
+    private static final String KEY_AUTO_LOGIN = "autoLogin";
 
     private final FirebaseAuth firebaseAuth;
     private final FirebaseFirestore firestore;
@@ -42,6 +45,24 @@ public class AuthRepository {
         firebaseAuth = FirebaseAuth.getInstance();
         firestore = FirebaseFirestore.getInstance();
         sharedPreferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+    }
+
+    /**
+     * Check if auto-login is enabled
+     * @return true if auto-login is enabled, false otherwise
+     */
+    public boolean isAutoLoginEnabled() {
+        return sharedPreferences.getBoolean(KEY_AUTO_LOGIN, false);
+    }
+
+    /**
+     * Set auto-login enabled/disabled
+     * @param enabled true to enable auto-login, false to disable
+     */
+    public void setAutoLoginEnabled(boolean enabled) {
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putBoolean(KEY_AUTO_LOGIN, enabled);
+        editor.apply();
     }
 
     /**
@@ -364,13 +385,23 @@ public class AuthRepository {
     }
 
     /**
-     * Clear saved credentials from SharedPreferences
+     * Clear all saved credentials and auto-login settings
      */
-    private void clearSavedCredentials() {
+    public void clearSavedCredentials() {
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.remove(KEY_USER_ID);
         editor.remove(KEY_AUTH_TOKEN);
+        editor.remove(KEY_AUTO_LOGIN);
         editor.apply();
+
+        // Delete auth token from Firestore if it exists
+        String token = sharedPreferences.getString(KEY_AUTH_TOKEN, null);
+        if (token != null) {
+            firestore.collection("auth_tokens").document(token).delete();
+        }
+
+        // Sign out from Firebase
+        firebaseAuth.signOut();
     }
 
     /**
@@ -379,5 +410,26 @@ public class AuthRepository {
      */
     private String getDeviceInfo() {
         return "Android " + Build.VERSION.RELEASE + " (" + Build.MODEL + ")";
+    }
+
+
+    public void validatePassword(User user, String password, AuthCallback callback) {
+        FirebaseAuth auth = FirebaseAuth.getInstance();
+        FirebaseUser firebaseUser = auth.getCurrentUser();
+
+        if (firebaseUser == null || user == null || user.getEmail() == null) {
+            callback.onError("Người dùng không hợp lệ.");
+            return;
+        }
+
+        // Re-authenticate user before sensitive operation
+        AuthCredential credential = EmailAuthProvider.getCredential(user.getEmail(), password);
+        firebaseUser.reauthenticate(credential)
+                .addOnSuccessListener(unused -> {
+                    callback.onSuccess(user);
+                })
+                .addOnFailureListener(e -> {
+                    callback.onError("Mật khẩu không đúng hoặc lỗi xác thực: " + e.getMessage());
+                });
     }
 }

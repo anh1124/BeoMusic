@@ -2,6 +2,7 @@ package com.example.beomusic.views.auth;
 
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -9,6 +10,7 @@ import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.Switch;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -17,6 +19,7 @@ import androidx.appcompat.widget.Toolbar;
 import com.example.beomusic.R;
 import com.example.beomusic.models.User;
 import com.example.beomusic.repositories.AuthRepository;
+import com.example.beomusic.views.HomeActivity;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
@@ -33,6 +36,7 @@ public class AccountActivity extends AppCompatActivity {
     private Button btnLogout, btnDeleteAccount, btnEditProfile;
     private ProgressBar progressBar;
     private Toolbar toolbar;
+    private Switch switchAutoLogin;
     
     private AuthRepository authRepository;
     private User currentUser;
@@ -71,6 +75,11 @@ public class AccountActivity extends AppCompatActivity {
         btnDeleteAccount = findViewById(R.id.btnDeleteAccount);
         btnEditProfile = findViewById(R.id.btnEditProfile);
         progressBar = findViewById(R.id.progressBar);
+        switchAutoLogin = findViewById(R.id.switchAutoLogin);
+        
+        // Initialize switch state
+        boolean isAutoLoginEnabled = authRepository.isAutoLoginEnabled();
+        switchAutoLogin.setChecked(isAutoLoginEnabled);
     }
     
     private void setListeners() {
@@ -87,6 +96,27 @@ public class AccountActivity extends AppCompatActivity {
         // Edit profile button click
         btnEditProfile.setOnClickListener(v -> {
             showEditProfileDialog();
+        });
+
+        // Auto-login switch change
+        switchAutoLogin.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            // Show alert dialog
+            new MaterialAlertDialogBuilder(this)
+                    .setTitle("Tự động đăng nhập")
+                    .setMessage(isChecked ? 
+                            "auto login core ON" :
+                            "auto login core OFF")
+                    .setPositiveButton("OK", (dialog, which) -> {
+                        // Save the auto-login setting
+                        authRepository.setAutoLoginEnabled(isChecked);
+                        
+                        // If auto-login is disabled, clear saved credentials
+                        if (!isChecked) {
+                            authRepository.clearSavedCredentials();
+                        }
+                    })
+                    .setCancelable(false) // Prevent dialog from being dismissed by clicking outside
+                    .show();
         });
     }
     
@@ -111,9 +141,31 @@ public class AccountActivity extends AppCompatActivity {
                     currentUser = documentSnapshot.toObject(User.class);
                     if (currentUser != null) {
                         // Display user data
-                        tvUsername.setText(currentUser.getUsername());
-                        tvEmail.setText(currentUser.getEmail());
-                        tvFullName.setText(currentUser.getFullName());
+                        tvUsername.setText("Tên người dùng: " + currentUser.getUsername());
+                        tvEmail.setText("Email: " + currentUser.getEmail());
+                        tvFullName.setText("Họ và tên: " + currentUser.getFullName());
+                        
+                        // Format and display dates
+                        TextView tvCreatedAt = findViewById(R.id.tvCreatedAt);
+                        TextView tvLastLogin = findViewById(R.id.tvLastLogin);
+                        
+                        // Format the dates
+                        java.text.SimpleDateFormat dateFormat = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm:ss", java.util.Locale.getDefault());
+                        
+                        // Display account creation date
+                        if (currentUser.getCreatedAt() != null) {
+                            tvCreatedAt.setText("Ngày tạo tài khoản: " + dateFormat.format(currentUser.getCreatedAt()));
+                        } else {
+                            tvCreatedAt.setText("Ngày tạo tài khoản: Không có thông tin");
+                        }
+                        
+                        // Display last login date
+                        if (currentUser.getLastLogin() != null) {
+                            tvLastLogin.setText("Đăng nhập lần cuối: " + dateFormat.format(currentUser.getLastLogin()));
+                        } else {
+                            tvLastLogin.setText("Đăng nhập lần cuối: Không có thông tin");
+                        }
+                        
                     } else {
                         Toast.makeText(this, "Không thể tải thông tin người dùng", Toast.LENGTH_SHORT).show();
                         navigateToLogin();
@@ -175,31 +227,45 @@ public class AccountActivity extends AppCompatActivity {
                     return;
                 }
                 
-                // Dismiss dialog and proceed with account deletion
-                dialog.dismiss();
-                deleteAccount(password);
+                // Validate password here
+                validatePassword(password, dialog);
             });
         });
         
         dialog.show();
     }
     
-    private void deleteAccount(String password) {
+    private void validatePassword(String password, AlertDialog dialog) {
+        authRepository.validatePassword(currentUser, password, new AuthRepository.AuthCallback() {
+            @Override
+            public void onSuccess(User user) {
+                dialog.dismiss();
+                requestAccountDeletion(password);
+            }
+
+            @Override
+            public void onError(String errorMessage) {
+                Toast.makeText(AccountActivity.this, errorMessage, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+    
+    private void requestAccountDeletion(String password) {
         if (currentUser == null) {
             Toast.makeText(this, "Không có thông tin người dùng", Toast.LENGTH_SHORT).show();
             return;
         }
-        
+
         // Show progress
         progressBar.setVisibility(View.VISIBLE);
-        
-        // Call repository to delete account
+
+        // Call repository to request account deletion
         authRepository.deleteAccount(currentUser, password, new AuthRepository.AuthCallback() {
             @Override
             public void onSuccess(User user) {
                 runOnUiThread(() -> {
                     progressBar.setVisibility(View.GONE);
-                    Toast.makeText(AccountActivity.this, "Tài khoản đã được xóa thành công", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(AccountActivity.this, "Yêu cầu xóa tài khoản đã được gửi thành công", Toast.LENGTH_SHORT).show();
                     navigateToLogin();
                 });
             }
@@ -288,8 +354,8 @@ public class AccountActivity extends AppCompatActivity {
                     currentUser.setFullName(fullName);
                     
                     // Update UI
-                    tvUsername.setText(username);
-                    tvFullName.setText(fullName);
+                    tvUsername.setText("Tên người dùng: " + username);
+                    tvFullName.setText("Họ và tên: " + fullName);
                     
                     progressBar.setVisibility(View.GONE);
                     Toast.makeText(this, "Hồ sơ đã được cập nhật", Toast.LENGTH_SHORT).show();
@@ -309,7 +375,13 @@ public class AccountActivity extends AppCompatActivity {
     
     @Override
     public boolean onSupportNavigateUp() {
-        onBackPressed();
+        navigateToHome();
         return true;
+    }
+
+    private void navigateToHome() {
+        Intent intent = new Intent(this, HomeActivity.class);
+        startActivity(intent);
+        finish();
     }
 }
