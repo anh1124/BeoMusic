@@ -5,14 +5,15 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.beomusic.BottomNavigation.BaseActivity;
 import com.example.beomusic.R;
 import com.example.beomusic.adapters.SongAdapter;
 import com.example.beomusic.models.Song;
@@ -22,7 +23,7 @@ import com.google.android.material.tabs.TabLayout;
 
 import java.util.ArrayList;
 
-public class HomeActivity extends AppCompatActivity implements SongAdapter.OnSongClickListener {
+public class HomeActivity extends BaseActivity implements SongAdapter.OnSongClickListener {
 
     // UI Components
     private RecyclerView recyclerSongs;
@@ -34,11 +35,20 @@ public class HomeActivity extends AppCompatActivity implements SongAdapter.OnSon
     private HomeViewModel viewModel;
     private SongAdapter adapter;
 
+    @Override
+    protected int getLayoutResourceId() {
+        return R.layout.activity_home;
+    }
+
+    @Override
+    protected int getDefaultNavigationItemId() {
+        return R.id.nav_home;
+    }
+
     @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_home);
 
         // ⭐ Khởi tạo view
         initViews();
@@ -145,8 +155,25 @@ public class HomeActivity extends AppCompatActivity implements SongAdapter.OnSon
 
     // 📌 Khi click vào nút "more" của bài hát (menu tuỳ chọn)
     @Override
-    public void onMoreClick(Song song, View view) {
-        Toast.makeText(this, "Options for: " + song.getTitle(), Toast.LENGTH_SHORT).show();
-        // TODO: Hiển thị menu tùy chọn (thêm vào playlist, tải xuống, chia sẻ,...)
+    public void onMoreClick(Song song, View anchorView) {
+        PopupMenu popupMenu = new PopupMenu(this, anchorView);
+        popupMenu.getMenuInflater().inflate(R.menu.menu_song_options, popupMenu.getMenu());
+
+        popupMenu.setOnMenuItemClickListener(item -> {
+            int id = item.getItemId();
+            if (id == R.id.action_add_to_playlist) {
+                Toast.makeText(this, "Added to playlist: " + song.getTitle(), Toast.LENGTH_SHORT).show();
+                return true;
+            } else if (id == R.id.action_share) {
+                Toast.makeText(this, "Share clicked: " + song.getTitle(), Toast.LENGTH_SHORT).show();
+                return true;
+            } else if (id == R.id.action_details) {
+                Toast.makeText(this, "Showing song details: " + song.getTitle(), Toast.LENGTH_SHORT).show();
+                return true;
+            }
+            return false;
+        });
+
+        popupMenu.show();
     }
 }

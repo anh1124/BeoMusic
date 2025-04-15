@@ -15,6 +15,7 @@ import com.example.beomusic.R;
 import com.example.beomusic.models.User;
 import com.example.beomusic.repositories.AuthRepository;
 import com.example.beomusic.ultis.DatabaseTestUtil;
+import com.example.beomusic.views.HomeActivity;
 import com.example.beomusic.views.MainActivity;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -170,7 +171,7 @@ public class LoginActivity extends AppCompatActivity {
                     }
                     
                     // Navigate to main activity
-                    Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                    Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     startActivity(intent);
                     finish();
@@ -201,7 +202,7 @@ public class LoginActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     progressBar.setVisibility(View.GONE);
                     
-                    Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                    Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     startActivity(intent);
                     finish();

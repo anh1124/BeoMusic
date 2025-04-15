@@ -20,7 +20,7 @@
         android:theme="@style/Theme.BeoMusic"
         tools:targetApi="31">
         <activity
-            android:name=".views.HomeActivity"
+            android:name=".views.auth.LoginActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -48,7 +48,7 @@
             android:name=".views.album.AlbumDetailActivity"
             android:exported="false" /> <!-- Authentication Activities -->
         <activity
-            android:name=".views.auth.LoginActivity"
+            android:name=".views.HomeActivity"
             android:exported="false" />
         <activity
             android:name=".views.auth.RegisterActivity"
@@ -58,9 +58,6 @@
             android:exported="false" /> <!-- Other Activities -->
         <activity
             android:name=".views.MainActivity"
-            android:exported="false" />
-        <activity
-            android:name=".views.MainActivity2"
             android:exported="false" />
     </application>
 
