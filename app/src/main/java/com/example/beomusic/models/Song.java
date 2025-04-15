@@ -1,8 +1,9 @@
 package com.example.beomusic.models;
 
+import java.io.Serializable;
 import java.util.Date;
 
-public class Song {
+public class Song implements Serializable {
     private String songId;
     private String title;
     private String artist;
