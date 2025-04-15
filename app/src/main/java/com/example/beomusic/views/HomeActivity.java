@@ -20,19 +20,13 @@ import com.example.beomusic.ViewModel.HomeViewModel;
 import com.example.beomusic.views.album.SongDetailActivity;
 import com.google.android.material.tabs.TabLayout;
 
-import java.util.ArrayList;
-
 public class HomeActivity extends AppCompatActivity implements SongAdapter.OnSongClickListener {
 
-    // UI Components
+    private HomeViewModel viewModel;
+    private SongAdapter adapter;
     private RecyclerView recyclerSongs;
     private ProgressBar progressBar;
     private ImageButton btnSearch;
-    private TabLayout tabLayout;
-
-    // ViewModel & Adapter
-    private HomeViewModel viewModel;
-    private SongAdapter adapter;
 
     @SuppressLint("MissingInflatedId")
     @Override
@@ -40,40 +34,15 @@ public class HomeActivity extends AppCompatActivity implements SongAdapter.OnSon
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
-        // ⭐ Khởi tạo view
-        initViews();
-
-        // ⭐ Cài đặt RecyclerView
-        setupRecyclerView();
-
-        // ⭐ Khởi tạo ViewModel
-        setupViewModel();
-
-        // ⭐ Gắn các sự kiện
-        setupTabLayout();
-        setupSearchButton();
-
-        // ⭐ Tải bài hát mặc định ("popular")
-        viewModel.searchSongs("popular");
-    }
-
-    // 📌 Khởi tạo view
-    private void initViews() {
         recyclerSongs = findViewById(R.id.recyclerSongs);
         progressBar = findViewById(R.id.progressBar);
         btnSearch = findViewById(R.id.btnSearch);
-        tabLayout = findViewById(R.id.tabLayout);
-    }
+        TabLayout tabLayout = findViewById(R.id.tabLayout);
 
-    // 📌 Setup RecyclerView
-    private void setupRecyclerView() {
         recyclerSongs.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new SongAdapter(this, this); // this = context, this = click listener
+        adapter = new SongAdapter(this, this);
         recyclerSongs.setAdapter(adapter);
-    }
 
-    // 📌 Setup ViewModel và observe dữ liệu
-    private void setupViewModel() {
         viewModel = new ViewModelProvider(this).get(HomeViewModel.class);
 
         viewModel.getSongs().observe(this, songs -> {
@@ -89,10 +58,8 @@ public class HomeActivity extends AppCompatActivity implements SongAdapter.OnSon
                 Toast.makeText(this, error, Toast.LENGTH_LONG).show();
             }
         });
-    }
 
-    // 📌 TabLayout xử lý phân loại bài hát
-    private void setupTabLayout() {
+        // Tab selection triggers different song categories
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
@@ -109,44 +76,41 @@ public class HomeActivity extends AppCompatActivity implements SongAdapter.OnSon
                 }
             }
 
-            @Override public void onTabUnselected(TabLayout.Tab tab) {}
-            @Override public void onTabReselected(TabLayout.Tab tab) {}
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) {}
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {}
         });
+
+        btnSearch.setOnClickListener(v -> {
+            viewModel.searchSongs("Alan Walker");
+        });
+
+        viewModel.searchSongs("popular");
     }
 
-    // 📌 Xử lý khi bấm nút tìm kiếm
-    private void setupSearchButton() {
-        btnSearch.setOnClickListener(v -> viewModel.searchSongs("Alan Walker"));
-    }
-
-    // 📌 Khi click vào 1 bài hát
     @Override
     public void onSongClick(Song song) {
         Toast.makeText(this, "Playing: " + song.getTitle(), Toast.LENGTH_SHORT).show();
 
-        Intent intent = new Intent(this, SongDetailActivity.class);
+        Intent newIntent = new Intent(this, SongDetailActivity.class);
+        newIntent.putExtra("song_id", song.getSongId());
+        newIntent.putExtra("title", song.getTitle());
+        newIntent.putExtra("artist", song.getArtist());
+        newIntent.putExtra("duration", song.getDuration());
+        newIntent.putExtra("thumbnail_url", song.getThumbnailUrl());
+        newIntent.putExtra("preview_url", song.getFilePath());
+        newIntent.putExtra("genre", song.getGenre());
 
-        // Truyền thông tin bài hát được chọn
-        intent.putExtra("song_id", song.getSongId());
-        intent.putExtra("title", song.getTitle());
-        intent.putExtra("artist", song.getArtist());
-        intent.putExtra("duration", song.getDuration());
-        intent.putExtra("thumbnail_url", song.getThumbnailUrl());
-        intent.putExtra("preview_url", song.getFilePath());
-        intent.putExtra("genre", song.getGenre());
+        startActivity(newIntent);
 
-        // Truyền danh sách bài hát hiện tại
-        ArrayList<Song> songList = new ArrayList<>(adapter.getSongs());
-        intent.putExtra("song_list", songList);
-        intent.putExtra("current_position", adapter.getSongs().indexOf(song));
-
-        startActivity(intent);
+        // Increase play count
+        song.setPlayCount(song.getPlayCount() + 1);
     }
 
-    // 📌 Khi click vào nút "more" của bài hát (menu tuỳ chọn)
     @Override
     public void onMoreClick(Song song, View view) {
         Toast.makeText(this, "Options for: " + song.getTitle(), Toast.LENGTH_SHORT).show();
-        // TODO: Hiển thị menu tùy chọn (thêm vào playlist, tải xuống, chia sẻ,...)
     }
 }

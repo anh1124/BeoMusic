@@ -20,23 +20,18 @@
         android:theme="@style/Theme.BeoMusic"
         tools:targetApi="31">
         <activity
-            android:name=".views.others.FavouriteSongActivity"
-            android:exported="false" />
-        <activity
-            android:name=".views.others.CommentActivity"
-            android:exported="false" />
-        <activity
             android:name=".views.HomeActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity> <!-- SongDetailActivity -->
+        </activity>
+        <!-- SongDetailActivity -->
         <activity
             android:name=".views.album.SongDetailActivity"
-            android:exported="false" /> <!-- Album Activities -->
+            android:exported="false">
+        </activity> <!-- Album Activities -->
         <activity
             android:name=".views.album.AlbumListActivity"
             android:exported="false" />
