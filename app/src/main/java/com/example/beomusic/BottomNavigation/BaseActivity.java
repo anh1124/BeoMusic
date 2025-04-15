@@ -7,7 +7,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.beomusic.R;
 import com.example.beomusic.views.HomeActivity;
-import com.example.beomusic.views.MainActivity;
+import com.example.beomusic.views.album.AlbumListActivity;
 import com.example.beomusic.views.album.SongDetailActivity;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
@@ -51,9 +51,9 @@ public abstract class BaseActivity extends AppCompatActivity {
 
             if (itemId == R.id.nav_home) {
                 intent = new Intent(BaseActivity.this, HomeActivity.class);
+            } else if (itemId == R.id.nav_album) {
+                intent = new Intent(BaseActivity.this, AlbumListActivity.class);
             } else if (itemId == R.id.nav_profile) {
-                intent = new Intent(BaseActivity.this, MainActivity.class);
-            } else if (itemId == R.id.nav_search) {
                 intent = new Intent(BaseActivity.this, SongDetailActivity.class);
             }
 
@@ -69,4 +69,6 @@ public abstract class BaseActivity extends AppCompatActivity {
             return false;
         });
     }
+
+
 }
