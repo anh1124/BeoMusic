@@ -47,6 +47,7 @@ public class Song implements Serializable {
 
     // Getters
     public String getSongId() { return songId; }
+    public String getId() { return songId; }
     public String getTitle() { return title; }
     public String getArtist() { return artist; }
     public int getDuration() { return duration; }

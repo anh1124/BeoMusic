@@ -151,6 +151,14 @@ public class SongDetailActivity extends AppCompatActivity {
             btnShuffle.setImageResource(isShuffle ? R.drawable.ic_shuffle_on: R.drawable.ic_shuffle);
         });
 
+        // Comment button click
+        btnComment.setOnClickListener(v -> {
+            Song currentSong = songList.get(currentPosition);
+            Intent intent = new Intent(this, com.example.beomusic.views.ShowComment.class);
+            intent.putExtra("songId", currentSong.getId());
+            intent.putExtra("songTitle", currentSong.getTitle());
+            startActivity(intent);
+        });
 
         btnMenu.setOnClickListener(view -> {
             PopupMenu popupMenu = new PopupMenu(SongDetailActivity.this, view);
