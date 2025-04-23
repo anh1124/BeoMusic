@@ -3,54 +3,43 @@ package com.example.beomusic.models;
 import java.util.Date;
 
 public class AlbumSong {
-    private String id; // ID duy nhất cho mối quan hệ album-song
+    private String id;
     private String albumId;
     private String songId;
-    private int order; // Thứ tự trong album
-    private Date addedDate; // Ngày thêm vào album
 
-    public AlbumSong() { } // Constructor rỗng cần thiết cho Firebase
+    // Empty constructor required for Firebase
+    public AlbumSong() {}
 
-    // Constructor cơ bản
-    public AlbumSong(String albumId, String songId, int order) {
+    // Constructor for adding a song to an album (favorites)
+    public AlbumSong(String albumId, String songId) {
         this.albumId = albumId;
         this.songId = songId;
-        this.order = order;
-        this.addedDate = new Date();
-    }
-    public AlbumSong(String id, String albumId, String songId, Date addedDate) {
-        this.id = id;
-        this.albumId = albumId;
-        this.songId = songId;
-        this.order = 0; // Đặt giá trị mặc định hoặc truyền từ bên ngoài
-        this.addedDate = addedDate;
-    }
-
-    // Constructor đầy đủ
-    public AlbumSong(String id, String albumId, String songId, int order, Date addedDate) {
-        this.id = id;
-        this.albumId = albumId;
-        this.songId = songId;
-        this.order = order;
-        this.addedDate = addedDate;
+        this.id = generateId(albumId, songId);
     }
 
     // Getters
     public String getId() { return id; }
     public String getAlbumId() { return albumId; }
     public String getSongId() { return songId; }
-    public int getOrder() { return order; }
-    public Date getAddedDate() { return addedDate; }
 
     // Setters
     public void setId(String id) { this.id = id; }
     public void setAlbumId(String albumId) { this.albumId = albumId; }
     public void setSongId(String songId) { this.songId = songId; }
-    public void setOrder(int order) { this.order = order; }
-    public void setAddedDate(Date addedDate) { this.addedDate = addedDate; }
 
-    // Phương thức tiện ích để tạo ID duy nhất từ albumId và songId
+    // Utility method to generate a consistent ID
     public static String generateId(String albumId, String songId) {
         return albumId + "_" + songId;
+    }
+    
+    // Helper method to check if a song is in favorites
+    public static String generateFavoriteEntryId(String userId, String songId) {
+        String favoritesAlbumId = Album.generateFavoritesAlbumId(userId);
+        return generateId(favoritesAlbumId, songId);
+    }
+    
+    // Helper method to check if this is a favorite song entry
+    public boolean isFavoriteEntry() {
+        return albumId != null && albumId.endsWith("_favorites");
     }
 }
