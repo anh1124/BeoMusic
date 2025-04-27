@@ -147,6 +147,12 @@ public class HomeActivity extends BaseActivity implements SongAdapter.OnSongClic
 
         // Truyền danh sách bài hát hiện tại
         ArrayList<Song> songList = new ArrayList<>(adapter.getSongs());
+        // Đảm bảo các bài hát có đầy đủ thông tin để có thể lưu vào firebase
+        for (Song s : songList) {
+            if (s.getSongId() == null || s.getSongId().isEmpty()) {
+                s.setSongId(s.getId()); // Đảm bảo songId không rỗng
+            }
+        }
         intent.putExtra("song_list", songList);
         intent.putExtra("current_position", adapter.getSongs().indexOf(song));
 
@@ -159,6 +165,9 @@ public class HomeActivity extends BaseActivity implements SongAdapter.OnSongClic
         PopupMenu popupMenu = new PopupMenu(this, anchorView);
         popupMenu.getMenuInflater().inflate(R.menu.menu_song_options, popupMenu.getMenu());
 
+        // Ẩn tùy chọn xóa khỏi danh sách yêu thích vì không phải trang Album
+        popupMenu.getMenu().findItem(R.id.action_remove_favorite).setVisible(false);
+        
         popupMenu.setOnMenuItemClickListener(item -> {
             int id = item.getItemId();
             if (id == R.id.action_add_to_playlist) {

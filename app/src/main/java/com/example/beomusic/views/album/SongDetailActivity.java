@@ -18,10 +18,12 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.core.content.ContextCompat;
 
 import com.bumptech.glide.Glide;
 import com.example.beomusic.R;
 import com.example.beomusic.models.Song;
+import com.example.beomusic.repositories.FavoriteRepository;
 import com.example.beomusic.views.HomeActivity;
 
 import java.io.IOException;
@@ -50,10 +52,14 @@ public class SongDetailActivity extends AppCompatActivity {
     private boolean isPlaying = false;
     private boolean isShuffle = false;
     private boolean isRepeat = false;
+    private boolean isFavorite = false;
 
     // Data
     private ArrayList<Song> songList;
     private int currentPosition;
+
+    // Repository
+    private FavoriteRepository favoriteRepository;
 
     //Intent
     private Intent newIntent;
@@ -64,6 +70,7 @@ public class SongDetailActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_song_detail);
         setupInsets();
+        favoriteRepository = new FavoriteRepository();
         getIntentData();
         bindViews();
         setControlListeners();
@@ -151,6 +158,29 @@ public class SongDetailActivity extends AppCompatActivity {
             btnShuffle.setImageResource(isShuffle ? R.drawable.ic_shuffle_on: R.drawable.ic_shuffle);
         });
 
+        // Favorite button click
+        btnFavourite.setOnClickListener(v -> {
+            Song currentSong = songList.get(currentPosition);
+            favoriteRepository.toggleFavorite(currentSong, new FavoriteRepository.FavoriteCallback() {
+                @Override
+                public void onSuccess(boolean favorite) {
+                    isFavorite = favorite;
+                    updateFavoriteButton();
+                    
+                    if (favorite) {
+                        Toast.makeText(SongDetailActivity.this, "Đã thêm vào danh sách yêu thích", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(SongDetailActivity.this, "Đã xóa khỏi danh sách yêu thích", Toast.LENGTH_SHORT).show();
+                    }
+                }
+
+                @Override
+                public void onError(String errorMessage) {
+                    Toast.makeText(SongDetailActivity.this, errorMessage, Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
+
         // Comment button click
         btnComment.setOnClickListener(v -> {
             Song currentSong = songList.get(currentPosition);
@@ -201,6 +231,17 @@ public class SongDetailActivity extends AppCompatActivity {
         });
     }
 
+    // Update the favorite button UI based on favorite status
+    private void updateFavoriteButton() {
+        if (isFavorite) {
+            btnFavourite.setImageResource(R.drawable.ic_favourite_filled);
+            btnFavourite.setColorFilter(ContextCompat.getColor(this, android.R.color.holo_red_light));
+        } else {
+            btnFavourite.setImageResource(R.drawable.ic_favourite);
+            btnFavourite.setColorFilter(ContextCompat.getColor(this, R.color.medium_gray));
+        }
+    }
+
     // === Load Song Data and Start Player ===
     private void loadSongFromList(int position) {
         if (mediaPlayer != null) {
@@ -211,6 +252,27 @@ public class SongDetailActivity extends AppCompatActivity {
         Song song = songList.get(position);
         bindSongData(song);
         initializeMediaPlayer(song.getFilePath());
+        
+        // Check if song is in favorites
+        checkFavoriteStatus(song);
+    }
+    
+    // Check if the current song is in favorites
+    private void checkFavoriteStatus(Song song) {
+        favoriteRepository.isFavorite(song, new FavoriteRepository.FavoriteCallback() {
+            @Override
+            public void onSuccess(boolean favorite) {
+                isFavorite = favorite;
+                updateFavoriteButton();
+            }
+
+            @Override
+            public void onError(String errorMessage) {
+                Log.e(TAG, "Error checking favorite status: " + errorMessage);
+                isFavorite = false;
+                updateFavoriteButton();
+            }
+        });
     }
 
     private void bindSongData(Song song) {

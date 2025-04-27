@@ -14,7 +14,7 @@ import java.util.List;
 public class AlbumUtils {
     private static final FirebaseFirestore db = FirebaseFirestore.getInstance();
     private static final String ALBUMS_COLLECTION = "albums";
-    private static final String ALBUM_SONGS_COLLECTION = "albumSongs";
+    private static final String ALBUM_SONGS_COLLECTION = "album_songs";
     
     /**
      * Kiểm tra xem người dùng đã có album chưa

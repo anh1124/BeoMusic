@@ -36,7 +36,7 @@
         android:text="Song Name"
         android:textColor="#FFFFFF"
         android:textSize="16sp"
-        app:layout_constraintEnd_toStartOf="@id/btnMore"
+        app:layout_constraintEnd_toStartOf="@id/btnRemove"
         app:layout_constraintStart_toEndOf="@id/cardSongImage"
         app:layout_constraintTop_toTopOf="@id/cardSongImage"
         app:layout_constraintBottom_toTopOf="@id/tvArtistName"/>
@@ -52,10 +52,23 @@
         android:text="Artist Name"
         android:textColor="#9A9A9A"
         android:textSize="14sp"
-        app:layout_constraintEnd_toStartOf="@id/btnMore"
+        app:layout_constraintEnd_toStartOf="@id/btnRemove"
         app:layout_constraintStart_toEndOf="@id/cardSongImage"
         app:layout_constraintBottom_toBottomOf="@id/cardSongImage"
         app:layout_constraintTop_toBottomOf="@id/tvSongName"/>
+
+    <ImageButton
+        android:id="@+id/btnRemove"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_marginEnd="8dp"
+        android:background="@android:color/transparent"
+        android:src="@android:drawable/ic_menu_delete"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/btnMore"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="#E91E63" />
 
     <ImageButton
         android:id="@+id/btnMore"
