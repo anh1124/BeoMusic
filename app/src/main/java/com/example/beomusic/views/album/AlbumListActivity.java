@@ -143,13 +143,40 @@ public class AlbumListActivity extends BaseActivity implements SongAdapter.OnSon
     
     @Override
     public void onSongClick(Song song) {
+        // Add debug logging
+        Log.d("AlbumListActivity", "Song clicked: " + song.getTitle());
+        Log.d("AlbumListActivity", "Song ID: " + song.getSongId());
+        Log.d("AlbumListActivity", "File path: " + song.getFilePath());
+        
+        // Ensure the song has a file path
+        if (song.getFilePath() == null || song.getFilePath().isEmpty()) {
+            Toast.makeText(this, "Không thể phát bài hát - không có đường dẫn file", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
         Intent intent = new Intent(this, SongDetailActivity.class);
         
         // Truyền thông tin bài hát được chọn
         intent.putExtra("song_id", song.getSongId());
         
+        // Bổ sung các thông tin cần thiết của bài hát
+        intent.putExtra("title", song.getTitle());
+        intent.putExtra("artist", song.getArtist());
+        intent.putExtra("duration", song.getDuration());
+        intent.putExtra("thumbnail_url", song.getThumbnailUrl());
+        intent.putExtra("preview_url", song.getFilePath());
+        intent.putExtra("genre", song.getGenre());
+        
         // Truyền danh sách bài hát hiện tại
         ArrayList<Song> songList = new ArrayList<>(adapter.getSongs());
+        
+        // Đảm bảo tất cả các bài hát có đường dẫn file hợp lệ
+        for (Song s : songList) {
+            if (s.getSongId() == null || s.getSongId().isEmpty()) {
+                s.setSongId(s.getId()); // Đảm bảo songId không rỗng
+            }
+        }
+        
         intent.putExtra("song_list", songList);
         intent.putExtra("current_position", adapter.getSongs().indexOf(song));
         

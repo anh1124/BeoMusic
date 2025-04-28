@@ -96,6 +96,39 @@ public class SongDetailActivity extends AppCompatActivity {
         Intent intent = getIntent();
         songList = (ArrayList<Song>) intent.getSerializableExtra("song_list");
         currentPosition = intent.getIntExtra("current_position", 0);
+        
+        // Kiểm tra thông tin nhận được từ intent
+        Log.d(TAG, "Received intent data");
+        Log.d(TAG, "Current position: " + currentPosition);
+        Log.d(TAG, "Song list size: " + (songList != null ? songList.size() : "null"));
+        
+        // Kiểm tra và bổ sung thông tin từ intent vào bài hát hiện tại (nếu cần)
+        if (songList != null && currentPosition >= 0 && currentPosition < songList.size()) {
+            Song currentSong = songList.get(currentPosition);
+            
+            // Lấy file path từ intent nếu có
+            String previewUrl = intent.getStringExtra("preview_url");
+            if (previewUrl != null && !previewUrl.isEmpty()) {
+                Log.d(TAG, "Using preview_url from intent: " + previewUrl);
+                currentSong.setFilePath(previewUrl);
+            }
+            
+            // Cập nhật các thông tin khác nếu thiếu
+            if (intent.hasExtra("title") && (currentSong.getTitle() == null || currentSong.getTitle().isEmpty())) {
+                currentSong.setTitle(intent.getStringExtra("title"));
+            }
+            
+            if (intent.hasExtra("artist") && (currentSong.getArtist() == null || currentSong.getArtist().isEmpty())) {
+                currentSong.setArtist(intent.getStringExtra("artist"));
+            }
+            
+            if (intent.hasExtra("thumbnail_url") && (currentSong.getThumbnailUrl() == null || currentSong.getThumbnailUrl().isEmpty())) {
+                currentSong.setThumbnailUrl(intent.getStringExtra("thumbnail_url"));
+            }
+            
+            Log.d(TAG, "Current song: " + currentSong.getTitle());
+            Log.d(TAG, "File path: " + currentSong.getFilePath());
+        }
     }
 
     // === Bind UI Views ===
@@ -251,6 +284,17 @@ public class SongDetailActivity extends AppCompatActivity {
 
         Song song = songList.get(position);
         bindSongData(song);
+        
+        // Debug logs
+        Log.d(TAG, "Loading song: " + song.getTitle());
+        Log.d(TAG, "Song ID: " + song.getSongId());
+        Log.d(TAG, "File path: " + song.getFilePath());
+        
+        if (song.getFilePath() == null || song.getFilePath().isEmpty()) {
+            Toast.makeText(this, "Không thể phát bài hát này - không có đường dẫn file", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
         initializeMediaPlayer(song.getFilePath());
         
         // Check if song is in favorites
@@ -292,6 +336,13 @@ public class SongDetailActivity extends AppCompatActivity {
     }
 
     private void initializeMediaPlayer(String url) {
+        if (url == null || url.isEmpty()) {
+            Log.e(TAG, "MediaPlayer initialization error: Empty URL");
+            Toast.makeText(this, "Không thể phát - URL không hợp lệ", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        Log.d(TAG, "Initializing MediaPlayer with URL: " + url);
         mediaPlayer = new MediaPlayer();
 
         mediaPlayer.setAudioAttributes(new AudioAttributes.Builder()
@@ -304,6 +355,7 @@ public class SongDetailActivity extends AppCompatActivity {
             mediaPlayer.prepareAsync();
 
             mediaPlayer.setOnPreparedListener(mp -> {
+                Log.d(TAG, "MediaPlayer prepared successfully");
                 seekBar.setMax(mp.getDuration());
                 tvTotalTime.setText(formatDuration(mp.getDuration() / 1000));
                 btnPlayPause.setEnabled(true);
@@ -314,8 +366,8 @@ public class SongDetailActivity extends AppCompatActivity {
             mediaPlayer.setOnCompletionListener(mp -> handleSongCompletion());
 
             mediaPlayer.setOnErrorListener((mp, what, extra) -> {
-                Log.e(TAG, "Playback Error: " + what + ", " + extra);
-                Toast.makeText(this, "Playback error", Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "Playback Error: what=" + what + ", extra=" + extra);
+                Toast.makeText(this, "Lỗi phát nhạc: " + what, Toast.LENGTH_SHORT).show();
                 return true;
             });
 
@@ -323,7 +375,10 @@ public class SongDetailActivity extends AppCompatActivity {
 
         } catch (IOException e) {
             Log.e(TAG, "DataSource Error: " + e.getMessage());
-            Toast.makeText(this, "Cannot play song", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Không thể phát nhạc: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Log.e(TAG, "Unknown Error: " + e.getMessage());
+            Toast.makeText(this, "Lỗi không xác định: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 
