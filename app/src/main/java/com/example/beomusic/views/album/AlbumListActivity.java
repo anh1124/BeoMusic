@@ -34,6 +34,8 @@ public class AlbumListActivity extends BaseActivity implements SongAdapter.OnSon
     private TextView tvNoFavorites;
     private TextView tvFavoritesTitle;
 
+    private ImageButton imgSong;
+
     // Adapter
     private SongAdapter adapter;
 
@@ -93,11 +95,9 @@ public class AlbumListActivity extends BaseActivity implements SongAdapter.OnSon
     }
     
     private void loadFavoriteSongs() {
-        // Show loading
         progressBar.setVisibility(View.VISIBLE);
         tvNoFavorites.setVisibility(View.GONE);
         
-        // Check if user is logged in
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser == null) {
             progressBar.setVisibility(View.GONE);
@@ -109,74 +109,64 @@ public class AlbumListActivity extends BaseActivity implements SongAdapter.OnSon
         String userId = currentUser.getUid();
         Log.d("AlbumListActivity", "Loading favorites for user: " + userId);
         
-        // Get favorite songs from repository
         favoriteRepository.getFavoriteSongs(new FavoriteRepository.FavoritesCallback() {
             @Override
             public void onSuccess(List<Song> favoriteSongs) {
-                progressBar.setVisibility(View.GONE);
-                
-                Log.d("AlbumListActivity", "Retrieved " + favoriteSongs.size() + " favorite songs");
-                
-                if (favoriteSongs.isEmpty()) {
-                    tvNoFavorites.setText("Bạn chưa có bài hát yêu thích nào");
-                    tvNoFavorites.setVisibility(View.VISIBLE);
-                } else {
-                    for (Song song : favoriteSongs) {
-                        Log.d("AlbumListActivity", "Song: " + song.getTitle() + ", ID: " + song.getSongId());
-                    }
+                runOnUiThread(() -> {
+                    progressBar.setVisibility(View.GONE);
                     
-                    tvNoFavorites.setVisibility(View.GONE);
-                    adapter.setSongs(favoriteSongs);
-                }
+                    Log.d("AlbumListActivity", "Retrieved " + favoriteSongs.size() + " favorite songs");
+                    
+                    if (favoriteSongs.isEmpty()) {
+                        tvNoFavorites.setText("Bạn chưa có bài hát yêu thích nào");
+                        tvNoFavorites.setVisibility(View.VISIBLE);
+                    } else {
+                        for (Song song : favoriteSongs) {
+                            Log.d("AlbumListActivity", String.format(
+                                "Song loaded - Title: %s, ID: %s, Preview URL: %s",
+                                song.getTitle(),
+                                song.getSongId(),
+                                song.getFilePath()
+                            ));
+                        }
+                        
+                        tvNoFavorites.setVisibility(View.GONE);
+                        adapter.setSongs(favoriteSongs);
+                    }
+                });
             }
 
             @Override
             public void onError(String errorMessage) {
-                Log.e("AlbumListActivity", "Error loading favorites: " + errorMessage);
-                progressBar.setVisibility(View.GONE);
-                tvNoFavorites.setText("Lỗi: " + errorMessage);
-                tvNoFavorites.setVisibility(View.VISIBLE);
-                Toast.makeText(AlbumListActivity.this, errorMessage, Toast.LENGTH_LONG).show();
+                runOnUiThread(() -> {
+                    Log.e("AlbumListActivity", "Error loading favorites: " + errorMessage);
+                    progressBar.setVisibility(View.GONE);
+                    tvNoFavorites.setText("Lỗi: " + errorMessage);
+                    tvNoFavorites.setVisibility(View.VISIBLE);
+                    Toast.makeText(AlbumListActivity.this, errorMessage, Toast.LENGTH_LONG).show();
+                });
             }
         });
     }
     
     @Override
     public void onSongClick(Song song) {
-        // Add debug logging
         Log.d("AlbumListActivity", "Song clicked: " + song.getTitle());
         Log.d("AlbumListActivity", "Song ID: " + song.getSongId());
-        Log.d("AlbumListActivity", "File path: " + song.getFilePath());
+        Log.d("AlbumListActivity", "Preview URL: " + song.getFilePath());
         
-        // Ensure the song has a file path
         if (song.getFilePath() == null || song.getFilePath().isEmpty()) {
-            Toast.makeText(this, "Không thể phát bài hát - không có đường dẫn file", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Không thể phát bài hát - không có preview URL", Toast.LENGTH_SHORT).show();
             return;
         }
         
         Intent intent = new Intent(this, SongDetailActivity.class);
-        
-        // Truyền thông tin bài hát được chọn
         intent.putExtra("song_id", song.getSongId());
-        
-        // Bổ sung các thông tin cần thiết của bài hát
         intent.putExtra("title", song.getTitle());
         intent.putExtra("artist", song.getArtist());
-        intent.putExtra("duration", song.getDuration());
-        intent.putExtra("thumbnail_url", song.getThumbnailUrl());
         intent.putExtra("preview_url", song.getFilePath());
-        intent.putExtra("genre", song.getGenre());
         
-        // Truyền danh sách bài hát hiện tại
         ArrayList<Song> songList = new ArrayList<>(adapter.getSongs());
-        
-        // Đảm bảo tất cả các bài hát có đường dẫn file hợp lệ
-        for (Song s : songList) {
-            if (s.getSongId() == null || s.getSongId().isEmpty()) {
-                s.setSongId(s.getId()); // Đảm bảo songId không rỗng
-            }
-        }
-        
         intent.putExtra("song_list", songList);
         intent.putExtra("current_position", adapter.getSongs().indexOf(song));
         

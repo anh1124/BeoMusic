@@ -11,7 +11,10 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 import android.util.Log;
 
 /**
@@ -135,94 +138,60 @@ public class FavoriteRepository {
         String userId = currentUser.getUid();
         String favoriteAlbumId = Album.generateFavoritesAlbumId(userId);
         
-        Log.d("FavoriteRepository", "Getting favorites for user: " + userId + ", album: " + favoriteAlbumId);
+        Log.d("FavoriteRepository", "Getting favorites for user: " + userId);
 
-        // Use a simple query without ordering to avoid index requirement
         firestore.collection("album_songs")
                 .whereEqualTo("albumId", favoriteAlbumId)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
-                    if (queryDocumentSnapshots.isEmpty()) {
-                        Log.d("FavoriteRepository", "No favorite songs found for user");
-                        callback.onSuccess(new ArrayList<>());
-                        return;
-                    }
-
                     List<String> songIds = new ArrayList<>();
                     for (DocumentSnapshot doc : queryDocumentSnapshots.getDocuments()) {
                         AlbumSong albumSong = doc.toObject(AlbumSong.class);
                         if (albumSong != null) {
                             songIds.add(albumSong.getSongId());
+                            Log.d("FavoriteRepository", "Found song ID: " + albumSong.getSongId());
                         }
                     }
-                    
-                    Log.d("FavoriteRepository", "Found " + songIds.size() + " favorite entries");
 
-                    // Try to get songs from songs collection first
-                    getSongsByIds(songIds, new FavoritesCallback() {
-                        @Override
-                        public void onSuccess(List<Song> songs) {
-                            if (!songs.isEmpty()) {
-                                Log.d("FavoriteRepository", "Successfully retrieved " + songs.size() + " songs from songs collection");
+                    if (songIds.isEmpty()) {
+                        Log.d("FavoriteRepository", "No favorite songs found");
+                        callback.onSuccess(new ArrayList<>());
+                        return;
+                    }
+
+                    // Lấy thông tin bài hát từ collection songs
+                    firestore.collection("songs")
+                            .whereIn("songId", songIds)
+                            .get()
+                            .addOnSuccessListener(songsSnapshot -> {
+                                List<Song> songs = new ArrayList<>();
+                                for (DocumentSnapshot doc : songsSnapshot.getDocuments()) {
+                                    try {
+                                        Song song = new Song();
+                                        song.setSongId(doc.getString("songId"));
+                                        song.setTitle(doc.getString("title"));
+                                        song.setArtist(doc.getString("artist"));
+                                        song.setFilePath(doc.getString("previewUrl"));
+                                        
+                                        Log.d("FavoriteRepository", "Loaded song: " + 
+                                            song.getTitle() + ", Preview URL: " + song.getFilePath());
+                                        
+                                        songs.add(song);
+                                    } catch (Exception e) {
+                                        Log.e("FavoriteRepository", "Error parsing song: " + e.getMessage());
+                                    }
+                                }
                                 callback.onSuccess(songs);
-                            } else {
-                                Log.d("FavoriteRepository", "No songs found in songs collection, checking individual documents");
-                                // If no songs were found, try to fetch each song individually from album_songs
-                                fetchIndividualSongs(songIds, callback);
-                            }
-                        }
-
-                        @Override
-                        public void onError(String errorMessage) {
-                            Log.e("FavoriteRepository", "Error in batch retrieval: " + errorMessage);
-                            // Try individual fetch as fallback
-                            fetchIndividualSongs(songIds, callback);
-                        }
-                    });
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e("FavoriteRepository", "Error getting songs: " + e.getMessage());
+                                callback.onError("Lỗi khi lấy thông tin bài hát: " + e.getMessage());
+                            });
                 })
                 .addOnFailureListener(e -> {
-                    Log.e("FavoriteRepository", "Error querying album_songs: " + e.getMessage());
-                    callback.onError("Lỗi khi lấy danh sách bài hát yêu thích: " + e.getMessage());
+                    Log.e("FavoriteRepository", "Error getting album_songs: " + e.getMessage());
+                    callback.onError("Lỗi khi lấy danh sách yêu thích: " + e.getMessage());
                 });
-    }
-
-    // Fetch songs one by one as a fallback method
-    private void fetchIndividualSongs(List<String> songIds, FavoritesCallback callback) {
-        Log.d("FavoriteRepository", "Fetching songs individually");
-        List<Song> result = new ArrayList<>();
-        final int[] processed = {0};
-        
-        if (songIds.isEmpty()) {
-            Log.d("FavoriteRepository", "No song IDs to fetch individually");
-            callback.onSuccess(result);
-            return;
-        }
-        
-        for (String songId : songIds) {
-            firestore.collection("songs").document(songId)
-                    .get()
-                    .addOnCompleteListener(task -> {
-                        processed[0]++;
-                        
-                        if (task.isSuccessful() && task.getResult() != null) {
-                            Song song = task.getResult().toObject(Song.class);
-                            if (song != null) {
-                                Log.d("FavoriteRepository", "Individually found song: " + song.getTitle());
-                                result.add(song);
-                            } else {
-                                Log.w("FavoriteRepository", "No song found for ID: " + songId);
-                            }
-                        } else {
-                            Log.e("FavoriteRepository", "Error fetching song: " + songId);
-                        }
-                        
-                        // Check if all songs have been processed
-                        if (processed[0] >= songIds.size()) {
-                            Log.d("FavoriteRepository", "Individual fetching complete, found " + result.size() + " songs");
-                            callback.onSuccess(result);
-                        }
-                    });
-        }
     }
 
     /**
@@ -252,29 +221,20 @@ public class FavoriteRepository {
     private void addSongToFavorites(String userId, String favoriteAlbumId, Song song, FavoriteCallback callback) {
         String favoriteEntryId = AlbumSong.generateFavoriteEntryId(userId, song.getSongId());
         
-        // First, ensure the song exists in the songs collection
+        // Chỉ lưu thông tin cần thiết
+        Map<String, Object> songData = new HashMap<>();
+        songData.put("songId", song.getSongId());        // Deezer track ID
+        songData.put("title", song.getTitle());          // Tên bài hát
+        songData.put("artist", song.getArtist());        // Tên nghệ sĩ
+        songData.put("previewUrl", song.getFilePath());  // Preview URL từ Deezer
+        
+        // Lưu vào Firestore
         firestore.collection("songs").document(song.getSongId())
-                .get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (!documentSnapshot.exists()) {
-                        // Song doesn't exist in Firestore, add it
-                        firestore.collection("songs").document(song.getSongId())
-                                .set(song)
-                                .addOnSuccessListener(aVoid -> {
-                                    // After song is added, create album_song entry
-                                    createAlbumSongEntry(favoriteAlbumId, favoriteEntryId, song, callback);
-                                })
-                                .addOnFailureListener(e -> 
-                                    callback.onError("Lỗi khi lưu bài hát: " + e.getMessage())
-                                );
-                    } else {
-                        // Song already exists, just create album_song entry
-                        createAlbumSongEntry(favoriteAlbumId, favoriteEntryId, song, callback);
-                    }
+                .set(songData)
+                .addOnSuccessListener(aVoid -> {
+                    createAlbumSongEntry(favoriteAlbumId, favoriteEntryId, song, callback);
                 })
-                .addOnFailureListener(e -> 
-                    callback.onError("Lỗi khi kiểm tra bài hát: " + e.getMessage())
-                );
+                .addOnFailureListener(e -> callback.onError("Lỗi khi lưu bài hát: " + e.getMessage()));
     }
 
     private void createAlbumSongEntry(String favoriteAlbumId, String favoriteEntryId, Song song, FavoriteCallback callback) {
@@ -292,65 +252,5 @@ public class FavoriteRepository {
                             );
                 })
                 .addOnFailureListener(e -> callback.onError("Lỗi khi thêm bài hát vào danh sách yêu thích: " + e.getMessage()));
-    }
-
-    private void getSongsByIds(List<String> songIds, FavoritesCallback callback) {
-        if (songIds.isEmpty()) {
-            callback.onSuccess(new ArrayList<>());
-            return;
-        }
-        
-        Log.d("FavoriteRepository", "Fetching details for " + songIds.size() + " songs: " + songIds);
-        
-        List<Song> allSongs = new ArrayList<>();
-        List<List<String>> batches = new ArrayList<>();
-        
-        // Split song IDs into batches of 10 (Firestore limitation)
-        for (int i = 0; i < songIds.size(); i += 10) {
-            batches.add(songIds.subList(i, Math.min(i + 10, songIds.size())));
-        }
-        
-        Log.d("FavoriteRepository", "Split into " + batches.size() + " batches");
-        
-        final int[] completedBatches = {0};
-        final boolean[] hasError = {false};
-        
-        for (List<String> batch : batches) {
-            Log.d("FavoriteRepository", "Processing batch: " + batch);
-            
-            firestore.collection("songs")
-                    .whereIn("songId", batch)
-                    .get()
-                    .addOnSuccessListener(queryDocumentSnapshots -> {
-                        Log.d("FavoriteRepository", "Batch query returned " + queryDocumentSnapshots.size() + " documents");
-                        
-                        if (!hasError[0]) {
-                            for (DocumentSnapshot doc : queryDocumentSnapshots.getDocuments()) {
-                                Song song = doc.toObject(Song.class);
-                                if (song != null) {
-                                    Log.d("FavoriteRepository", "Found song: " + song.getTitle());
-                                    allSongs.add(song);
-                                } else {
-                                    Log.w("FavoriteRepository", "Document exists but couldn't convert to Song: " + doc.getId());
-                                }
-                            }
-                            
-                            completedBatches[0]++;
-                            Log.d("FavoriteRepository", "Completed " + completedBatches[0] + " of " + batches.size() + " batches");
-                            
-                            if (completedBatches[0] == batches.size()) {
-                                Log.d("FavoriteRepository", "All batches complete, returning " + allSongs.size() + " songs");
-                                callback.onSuccess(allSongs);
-                            }
-                        }
-                    })
-                    .addOnFailureListener(e -> {
-                        Log.e("FavoriteRepository", "Error querying batch: " + e.getMessage());
-                        if (!hasError[0]) {
-                            hasError[0] = true;
-                            callback.onError("Lỗi khi lấy thông tin bài hát: " + e.getMessage());
-                        }
-                    });
-        }
     }
 } 
